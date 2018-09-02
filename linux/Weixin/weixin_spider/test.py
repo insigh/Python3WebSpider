@@ -1,9 +1,11 @@
+import json
+
 import requests
 import re
 from urllib.parse import urlencode
 import time
 import numpy as np
-
+from pyquery import PyQuery as pq
 headers = {
         'Accept': 'text / html, application / xhtml + xml, application / xml;q = 0.9, image / webp, image / apng, * / *;q = 0.8',
         'Accept-Encoding': 'gzip, deflate',
@@ -11,7 +13,7 @@ headers = {
         'Cache-Control': 'max - age = 0',
         'Connection': 'keep - alive',
         'Host': 'weixin.sogou.com',
-        'Cookie': 'SUV=005B436DDA6B84CD593D3CE5EEDBD285; ssuid=7795656980; dt_ssuid=3416084972; _ga=GA1.2.2088121334.1501526998; GOTO=; SUID=53D5786A4D238B0A59165B6E00097365; pex=C864C03270DED3DD8A06887A372DA219231FFAC25A9D64AE09E82AED12E416AC; usid=4SAwKqYSbh3YlKzr; LSTMV=420%2C149; LCLKINT=5793; CXID=8F977B45EDE554196397E9A9A04FAA1B; ad=t0lmSlllll2bU@f5lllllVH@szDlllllzX0qtlllll9lllllpj7ll5@@@@@@@@@@; ABTEST=0|1535812609|v1; IPLOC=CN1100; weixinIndexVisited=1; sct=18; JSESSIONID=aaavAiEnOUvVG52THQBvw; PHPSESSID=if7rm14b9326spgp7kvkjs3837; SUIR=E1B468D8030677D23E74D06B03AA8EDC; ppinf=5|1535815746|1537025346|dHJ1c3Q6MToxfGNsaWVudGlkOjQ6MjAxN3x1bmlxbmFtZToyNzolRTUlQkMlQTAlRTglQjYlODUlRTYlOUQlQjB8Y3J0OjEwOjE1MzU4MTU3NDZ8cmVmbmljazoyNzolRTUlQkMlQTAlRTglQjYlODUlRTYlOUQlQjB8dXNlcmlkOjQ0Om85dDJsdVBJSy0wSEo0dDBuZUdZbGp4V3JISkFAd2VpeGluLnNvaHUuY29tfA; pprdig=vAmIHkFYsIdTVOpS57uk10-U0DLOWzfXID43Vfw8QOkjRqQSCpNQCU39knT-Jzgi-TJlRElRUVTWUJRMV1tAfynpwBs3x987aZYuWazzYbrt-7dkZYKIh9bqd9fhd7Z3Ag-9gDZXddBPhy9rnsHBwpqT6aCODZugvYEvwXcZing; sgid=15-36913821-AVuKsELjXgOWibswSdL0VozY; ppmdig=1535822440000000b5fd92dc3ae70973ce5764bae5ed1258; SNUID=0F5B8636ECE9993E1F2C3C61ED27C2E3; seccodeRight=success; successCount=1|Sat, 01 Sep 2018 17:56:05 GMT',
+        'Cookie': 'SUV=005B436DDA6B84CD593D3CE5EEDBD285; ssuid=7795656980; dt_ssuid=3416084972; _ga=GA1.2.2088121334.1501526998; GOTO=; SUID=53D5786A4D238B0A59165B6E00097365; pex=C864C03270DED3DD8A06887A372DA219231FFAC25A9D64AE09E82AED12E416AC; usid=4SAwKqYSbh3YlKzr; LSTMV=420%2C149; LCLKINT=5793; CXID=8F977B45EDE554196397E9A9A04FAA1B; ad=t0lmSlllll2bU@f5lllllVH@szDlllllzX0qtlllll9lllllpj7ll5@@@@@@@@@@; ABTEST=0|1535812609|v1; IPLOC=CN1100; weixinIndexVisited=1; sct=18; JSESSIONID=aaavAiEnOUvVG52THQBvw; PHPSESSID=if7rm14b9326spgp7kvkjs3837; SUIR=E1B468D8030677D23E74D06B03AA8EDC; SNUID=0F5B8636ECE9993E1F2C3C61ED27C2E3; ppinf=5|1535860607|1537070207|dHJ1c3Q6MToxfGNsaWVudGlkOjQ6MjAxN3x1bmlxbmFtZToyNzolRTUlQkMlQTAlRTglQjYlODUlRTYlOUQlQjB8Y3J0OjEwOjE1MzU4NjA2MDd8cmVmbmljazoyNzolRTUlQkMlQTAlRTglQjYlODUlRTYlOUQlQjB8dXNlcmlkOjQ0Om85dDJsdVBJSy0wSEo0dDBuZUdZbGp4V3JISkFAd2VpeGluLnNvaHUuY29tfA; pprdig=F8TDsUMG0C4Ljt4qplfRkFWLUZym5QiF98KJuPyRETZDEqaw61Lulyt7vXzidytxLHvXgORFZUa-_67vb_XPRW548aITmZ8KoHCLXne6HJUcByjk0gO2d4JMhnEM71QLa1_oNueDhvnTer9sQXSxJ9MjtWim81WwfFfGFF95go0; sgid=15-36913821-AVuLX38konjQm1spjmDZyzg; ppmdig=15358605980000002768fb9edfd4fcc10d30ddbcc58ad77e',
         'Referer': 'http://weixin.sogou.com/weixin?query=%E6%8B%9B%E8%81%98&type=2&page=100&ie=utf8',
         'Upgrade-Insecure-Requests': '1',
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
@@ -83,14 +85,39 @@ def get_index_urls(page):
         return get_index_urls(page)
 
 
+def parse_detail_page(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        doc = pq(response.text)
+        title = doc('#activity-name').text().strip()
+        wechat = doc('#js_name').text().strip()
+        wechat_id = doc('#js_profile_qrcode > div > p:nth-child(3) > span').text()
+        wechat_description = doc('#js_profile_qrcode > div > p:nth-child(4) > span').text()
+        items = doc('#js_content p').items()
+        text = '\n'.join([ item.text() for item in items])
+        data = {
+            'title': title,
+            'wechat': wechat,
+            'wechat_id':wechat_id,
+            'wechat_description':wechat_description,
+            'text':text
+        }
+        yield data
+
+
+
+
 def main():
     for page in range(1, 101):
         print("-------------"+ str(page) +"------------")
-        with open('urls_res.txt', 'a+') as f:
+        with open('urls_res.txt', 'a+', encoding='utf8') as f:
             res = get_index_urls(page)
             print(len(res))
             for url in res:
                 f.write(url + '\n')
+                for item in parse_detail_page(url=url):
+                    f.write(json.dumps(item, ensure_ascii=False)+'\n')
+
         time.sleep(np.random.randint(36, 120))
         if page%10 == 0:
             time.sleep(np.random.randint(200, 300))
@@ -99,5 +126,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
