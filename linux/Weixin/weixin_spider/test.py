@@ -94,6 +94,7 @@ def parse_detail_page(url):
         wechat_id = doc('#js_profile_qrcode > div > p:nth-child(3) > span').text()
         wechat_description = doc('#js_profile_qrcode > div > p:nth-child(4) > span').text()
         items = doc('#js_content p').items()
+        # print(type(items)) # generator
         text = '\n'.join([ item.text() for item in items])
         data = {
             'title': title,

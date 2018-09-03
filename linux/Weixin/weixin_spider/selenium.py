@@ -1,35 +1,38 @@
-import selenium
-import requests
-from selenium.common.exceptions import ElementNotSelectableException
-from selenium import webdriver
+import json
+from json import JSONDecodeError
+import os
+import xlwt
 
-query = 'NBA'
-start_url = "http://weixin.sogou.com/weixin?"
-PROXY_POOL_URL = 'http://10.77.40.60:5555/random'
+from xlwt import Workbook
+book = Workbook(encoding='utf-8')
+sheet1 = book.add_sheet('school_recruit')
 
-
-def get_proxy():
-    """
-    从代理池获取代理
-    :return:
-    """
+row_num = 0
+text_file = open('school_recruit_res.txt', 'r', encoding='utf8')
+line = text_file.readline()
+json_file = json.loads(line.strip())
+keys = list(json_file.keys())
+print(keys)
+while line:
     try:
-        response = requests.get(PROXY_POOL_URL)
-        if response.status_code == 200:
-            print('Get Proxy', response.text)
-            return response.text
-        return None
+        for i, f in enumerate(keys):
+            sheet1.write(row_num, i, f)
+            print('inserted ')
+            print(row_num)
+        row_num += 1
+        line = text_file.readline()
+        keys = list(json.loads(line.strip()).values())
+        print(keys)
+        print(row_num)
 
-    except requests.ConnectionError:
-        return None
+    except JSONDecodeError:
+        print(" Decode Error !")
+print(row_num)
+text_file.close()
+book.save('demo.xls')
 
 
-def get_index_urls(page):
-    pass
 
-
-browser = webdriver.Chrome()
-browser.get(url="", proxies="")
 
 
 
